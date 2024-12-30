@@ -1,0 +1,21 @@
+ # 忽略Python字节码文件
+ *.pyc
+ # 忽略Python缓存目录
+ __pycache__/
+ # 忽略虚拟环境目录（如果是venv）
+ venv/
+ # 忽略Pipenv的Pipfile.lock（可选）
+ #Pipfile.lock
+ # 忽略测试结果目录（假设名称为test - results）
+ test - results/
+ # 忽略日志文件（假设命名为*.log）
+ *.log
+ # 忽略PyCharm的模块文件和配置目录
+ *.iml
+.idea/
+ # 忽略VSCode的工作区配置目录（可选）
+.vscode/
+ # 忽略SQLite数据库文件（假设名称为db.sqlite3）
+ db.sqlite3
+ # 忽略数据库迁移目录（假设名称为migrations）
+ #migrations/
