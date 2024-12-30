@@ -1,8 +1,29 @@
 
+## 项目介绍
+本项目目的是将中台项目各位小组成员负责的部分整合到一个Web后端
+在线项目后端只需启动本项目即可
 
+## 项目部署
+
+### clone代码
+```
+git clone https://github.com/ecnu2024zhongtai/backend.git
+```
+### 安装依赖
+```
+  cd WebHosting
+  pip install -r requirements.txt
+```
+### 部署运行
+```
+python main.py
+```
 
 ## 项目结构
-
+FastAPI基础项目来源于：https://github.com/CRUDYYDS/fastapi_ad
+根据本次项目需求做了部分结构修改，具体结构见代码
+大致结构参考如下：
+```
 fastapi_ad/
 ├── app/
 │   ├── api/                  # API 路由
@@ -41,7 +62,7 @@ fastapi_ad/
 ├── requirements.txt          # 项目依赖
 └── README.md
 
-
+```
 
 
 
