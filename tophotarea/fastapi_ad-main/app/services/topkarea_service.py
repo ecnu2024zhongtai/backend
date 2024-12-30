@@ -12,7 +12,7 @@ import psycopg2
 import math
 import heapq
 
-file_path="C:\\Users\\wujie\\Desktop\\topkarea_graham_202412222251graham.xls"
+
 
 DB_CONFIG = {
     "host": "law.conetop.cn",       # Êý¾Ý¿âµØÖ·
