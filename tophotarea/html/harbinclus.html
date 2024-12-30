@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Map - 哈尔滨</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <style>
+
+        #map {
+            width: 100%;
+            height: 100vh;        
+        }
+        #ck {
+            position: absolute;
+            left: 18px;
+            top: 100px;
+            background: white; /* 不透明背景 */
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            z-index: 1000; /* 确保层级高于地图 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
+        }
+
+            #ck div {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+            }
+
+            #ck button {
+               /* margin-left: 10px;*/
+                padding: 5px 10px;
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                background-color: #007bff;
+                color: white;
+                cursor: pointer;
+            }
+
+                #ck button:hover {
+                    background-color: #0056b3;
+                }
+
+            #ck #timeck {
+                text-align: center;
+                font-weight: bold;
+                color:white;
+            }
+
+        @keyframes radar-scan {
+            0% {
+                transform: scale(1);
+                opacity: 0.4;
+            }
+
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        .radar-circle {
+            position: absolute;
+            background: rgba(0, 255, 255, 0.88);
+            border-radius: 50%;
+            animation: radar-scan 2s infinite;
+        }
+        #counter {
+            font-size: 30px;
+            margin: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #number {
+            margin: 0 10px;
+           /* width: 60px;*/
+            text-align: center;
+        }
+
+        #plus-btn {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+    </style>
+
+</head>
+<body>
+
+    <div id="map" style=""></div>
+    <div id="ck">
+        <div>
+            <button id="plus-btn">重叠+</button>
+            <div id="number" style="font-size:15px;">8</div>
+        </div>
+        <div>
+            <button id="plus-btnclear">非重叠+</button>
+            <div id="numberclear">8</div>
+        </div>
+        <div>
+            <button id="timeck">模拟</button>
+            <!--<div id="timeck">14点</div>-->
+        </div>
+        <button onclick="car()">路径规划</button>
+    </div>
+</body>
+
+
+</html>
+<script>
+    
+    let currentNumber = 8;
+    // 更新数字显示
+    function updateNumber() {
+        document.getElementById('number').textContent = currentNumber;
+    }
+
+    function updateNumber2() {
+        document.getElementById('numberclear').textContent = currentNumber;
+    }
+
+    // 调用后台接口的函数
+    function callBackendApi(number) {
+        // 调用 FastAPI 接口并获取数据
+        $.get(`http://127.0.0.1:8000/api/v1/topkarea/?time=${number}`, function (data) {
+            // 按 time 和 clusterid 分组
+            var groupedData = groupByTimeAndCluster(data);
+
+            // 绘制每个分组对应的封闭区域
+            for (const [time, clusters] of Object.entries(groupedData)) {
+                for (const [clusterid, points] of Object.entries(clusters)) {
+                    drawClusterOnMap(points, clusterid);
+                }
+            }
+        });
+    }
+    // 处理加号按钮点击事件
+    document.getElementById('plus-btn').addEventListener('click', () => {
+        // 更新数字
+        currentNumber = (currentNumber + 1) % 24; // 如果超过23，回到0
+        updateNumber();
+        // 调用后台接口
+        callBackendApi(currentNumber);
+    });
+
+    document.getElementById('plus-btnclear').addEventListener('click', () => {
+        // 更新数字
+        currentNumber = (currentNumber + 1) % 24; // 如果超过23，回到0
+        updateNumber2();
+        // 调用后台接口
+        callBackendApiclear(currentNumber);
+    });
+
+    function callBackendApiclear(number) {
+
+        map.eachLayer(function (layer) {
+            // 判断是否为 L.polygon 类型的图层
+            if (layer instanceof L.Polygon) {
+                map.removeLayer(layer);
+            }
+        });
+
+        // 调用 FastAPI 接口并获取数据
+        $.get(`http://127.0.0.1:8000/api/v1/topkarea/?time=${number}`, function (data) {
+            // 按 time 和 clusterid 分组
+            var groupedData = groupByTimeAndCluster(data);
+
+            // 绘制每个分组对应的封闭区域
+            for (const [time, clusters] of Object.entries(groupedData)) {
+                for (const [clusterid, points] of Object.entries(clusters)) {
+                    drawClusterOnMap(points, clusterid);
+                }
+            }
+        });
+    }
+
+    // 初始化时显示数字
+    updateNumber();
+
+    //// 按 time 和 clusterid 分组数据
+    function groupByTimeAndCluster(data) {
+        const groupedData = {};
+
+        data.forEach(item => {
+            // 获取时间和 clusterid
+            const time = item.time;
+            const clusterid = item.clusterid;
+
+            // 初始化分组结构
+            if (!groupedData[time]) {
+                groupedData[time] = {};
+            }
+
+            if (!groupedData[time][clusterid]) {
+                groupedData[time][clusterid] = [];
+            }
+
+            // 将当前点加入对应的分组
+            groupedData[time][clusterid].push([item.latitude, item.longitude]);
+        });
+
+        return groupedData;
+    }
+    // 使用 Leaflet 绘制封闭区域
+    function drawClusterOnMap(points, clusterid) {
+        // 创建一个多边形，表示该 clusterid 的封闭区域
+        var polygon = L.polygon(points, {
+            color: 'blue',
+            weight: 3,
+            opacity: 0.5,
+            fillColor: 'blue',
+            fillOpacity: 0.2
+        }).addTo(map);
+
+        // 为多边形绑定一个弹出窗口
+        //   polygon.bindPopup('Cluster ID: ' + clusterid);
+    }
+
+
+    // 创建地图并设置初始视图为哈尔滨的经纬度
+    var map = L.map('map').setView([45.75, 126.65], 12); // 哈尔滨的经纬度
+
+    // 添加OpenStreetMap的地图图层
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    //// 计算两个经纬度点的中点（用于放置标志）
+    function getMidPoint(coords) {
+        var latSum = 0;
+        var lngSum = 0;
+
+        coords.forEach(function (coord) {
+            latSum += coord[0];
+            lngSum += coord[1];
+        });
+
+        return [latSum / coords.length, lngSum / coords.length];
+    }
+
+    //模拟14点
+    document.getElementById('timeck').addEventListener('click', () => {
+
+        var userLocation = [45.76637, 126.67251];
+        map.setView(userLocation, 15);
+        map.eachLayer(function (layer) {
+            // 判断是否为 L.polygon 类型的图层
+            if (layer instanceof L.Polygon) {
+                map.removeLayer(layer);
+            }
+        });
+
+        // 调用 FastAPI 接口并获取区域数据
+        $.get(`http://127.0.0.1:8000/api/v1/topkarea/?time=14`, function (data) {
+            // 按 time 和 clusterid 分组
+            var groupedData = groupByTimeAndCluster(data);
+
+            // 绘制每个分组对应的封闭区域
+            for (const [time, clusters] of Object.entries(groupedData)) {
+                for (const [clusterid, points] of Object.entries(clusters)) {
+                    drawClusterOnMap(points, clusterid);
+                }
+            }
+        });
+        //获取实时交通
+        $.get(`http://127.0.0.1:8000/api/v1/getRoads`, function (data) {
+
+
+            var groupedData = data.reduce(function (acc, item) {
+                if (!acc[item.roadid]) {
+                    acc[item.roadid] = {
+                        roadid: item.roadid.toString(),
+                        coordinates: [],
+                        color: item.status
+                    };
+                }
+                acc[item.roadid].coordinates.push([item.latitude, item.longitude]);
+                return acc;
+            }, {});
+
+            // 将分组后的数据转换为数组
+            routes = Object.values(groupedData);
+
+            // 遍历路段数据，绘制每条路段并绑定点击事件
+            routes.forEach(function (route) {
+
+
+
+                // 创建多段线（路段）
+                var polyline = L.polyline(route.coordinates, {
+                    color: route.color,  // 设置路段颜色
+                    weight: 7,            // 路段宽度
+                    opacity: 0.7,         // 路段透明度
+                    id: 'myPolyline'
+                }).addTo(map);
+
+                // 计算路段的中点来放置标志
+                //var midpoint = getMidPoint(route.coordinates);
+
+                //// 创建标志，显示路段名称
+                //L.marker(midpoint, {
+                //    icon: L.divIcon({
+                //        className: 'route-name',
+                //        html: route.roadid,
+                //        iconSize: [100, 60],  // 设置标志的大小
+                //        iconAnchor: [50, 30]  // 设置标志的锚点，居中显示
+                //    })
+                //}).addTo(map);
+
+                // 为每条路段绑定点击事件，点击时显示路段名称
+                //polyline.on('click', function() {
+                //    L.popup()
+                //        .setLatLng(route.coordinates[0])  // 将弹窗定位到路段的起点
+                //        .setContent('路段名称: ' + route.name)
+                //        .openOn(map);
+                //});
+            });
+            
+
+        });
+
+
+        var carIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/744/744465.png',  // 新的小车图标URL
+            iconSize: [70, 70], // 图标的大小
+            iconAnchor: [30, 10], // 图标锚点（即标记的位置）
+            popupAnchor: [30, -10] // Popup 相对标记的偏移量
+        });
+
+
+        //添加车辆
+        L.marker([45.76637, 126.67251], { icon: carIcon }).addTo(map).openPopup().on('click', function (e) {           
+                // 创建一个div元素，用来显示雷达扫描效果
+                var radarDiv = document.createElement("div");
+                radarDiv.classList.add("radar-circle");
+
+                // 将雷达扫描效果作为HTML元素添加到地图
+                map.getPanes().overlayPane.appendChild(radarDiv);
+
+                // 设置雷达扫描的定位（覆盖地图上的用户位置）
+                var latlng = map.latLngToContainerPoint(userLocation);
+                radarDiv.style.left = latlng.x-95  + "px";
+                radarDiv.style.top = latlng.y -95 + "px";
+                radarDiv.style.width = "200px";
+                radarDiv.style.height = "200px";
+
+            setTimeout(function () {
+                radarDiv.remove(); // 删除雷达扫描元素
+            }, 5000);  
+
+            //调用API获取出租车附近的空载区域
+            $.get('http://127.0.0.1:8000/api/v1/searchtopkarea/?lat=45.76637&lng=126.67251', function (data) {
+                data.forEach(item => {
+                    L.marker([item.latitude, item.longitude]).addTo(map);
+                });
+            });
+
+        });
+
+    });
+
+    // 使用 Leaflet 绘制封闭区域
+    function drawClusterOnMap2(points, clusterid) {
+        // 创建一个多边形，表示该 clusterid 的封闭区域
+        var polygon = L.polygon(points, {
+            color: 'blue',
+            weight: 3,
+            opacity: 0.5,
+            fillColor: 'blue',
+            fillOpacity: 0.2
+        }).addTo(map);
+
+        // 为多边形绑定一个弹出窗口
+        //   polygon.bindPopup('Cluster ID: ' + clusterid);
+    }
+
+    function car() {
+        map.eachLayer(function (layer) {
+            if (layer instanceof L.Polyline && layer.options.id === 'myPolyline') {
+                // console.log(layer); // 找到指定 id 的 Polyline
+                layer.remove()
+            }
+        });
+
+        $.get(`http://127.0.0.1:8000/api/v1/sendtopkarea/?lat=45.76637&lng=126.67251`, function (data) {
+            // 按 time 和 clusterid 分组
+
+            var groupedData = data.reduce(function (acc, item) {
+                if (!acc[item.roadid]) {
+                    acc[item.roadid] = {
+                        roadid: item.roadid.toString(),
+                        coordinates: [],
+                        color: item.status
+                    };
+                }
+                acc[item.roadid].coordinates.push([item.latitude, item.longitude]);
+                return acc;
+            }, {});
+
+            // 将分组后的数据转换为数组
+            routes = Object.values(groupedData);
+
+
+
+            // 遍历路段数据，绘制每条路段并绑定点击事件
+            routes.forEach(function (route) {
+                // 创建多段线（路段）
+                var polyline = L.polyline(route.coordinates, {
+                    color: route.color,  // 设置路段颜色
+                    weight: 7,            // 路段宽度
+                    opacity: 0.7         // 路段透明度
+                }).addTo(map);
+
+                // 计算路段的中点来放置标志
+                var midpoint = getMidPoint(route.coordinates);
+
+                // 创建标志，显示路段名称
+                //L.marker(midpoint, {
+                //    icon: L.divIcon({
+                //        className: 'route-name',
+                //        html: route.roadid,
+                //        iconSize: [100, 60],  // 设置标志的大小
+                //        iconAnchor: [50, 30]  // 设置标志的锚点，居中显示
+                //    })
+                //}).addTo(map);
+
+                // 为每条路段绑定点击事件，点击时显示路段名称
+                //polyline.on('click', function() {
+                //    L.popup()
+                //        .setLatLng(route.coordinates[0])  // 将弹窗定位到路段的起点
+                //        .setContent('路段名称: ' + route.name)
+                //        .openOn(map);
+                //});
+            });
+
+        });
+    }
+
+           // 点击地图时获取经纬度并显示弹窗
+        //map.on('click', function(e) {
+        //    var lat = e.latlng.lat; // 获取纬度
+        //    var lng = e.latlng.lng; // 获取经度
+        //    // 弹出显示经纬度
+        //    L.popup()
+        //        .setLatLng(e.latlng)
+        //        .setContent('你点击的位置:[' + lat.toFixed(5) + ',' + lng.toFixed(5)+']')
+        //        .openOn(map);
+        //});
+
+    //document.getElementById('car').addEventListener('click', () => {
+
+    //    // 获取 Polyline 对象并通过 id 匹配
+    //    map.eachLayer(function (layer) {
+    //        if (layer instanceof L.Polyline && layer.options.id === 'myPolyline') {
+    //            // console.log(layer); // 找到指定 id 的 Polyline
+    //            layer.remove()
+    //        }
+    //    });
+
+    //    $.get(`http://127.0.0.1:8000/api/v1/sendtopkarea/?lat=45.76637&lng=126.67251`, function (data) {
+    //        // 按 time 和 clusterid 分组
+
+    //        var groupedData = data.reduce(function (acc, item) {
+    //            if (!acc[item.roadid]) {
+    //                acc[item.roadid] = {
+    //                    roadid: item.roadid.toString(),
+    //                    coordinates: [],
+    //                    color: item.status
+    //                };
+    //            }
+    //            acc[item.roadid].coordinates.push([item.latitude, item.longitude]);
+    //            return acc;
+    //        }, {});
+
+    //        // 将分组后的数据转换为数组
+    //        routes = Object.values(groupedData);
+
+
+
+    //        // 遍历路段数据，绘制每条路段并绑定点击事件
+    //        routes.forEach(function (route) {
+    //            // 创建多段线（路段）
+    //            var polyline = L.polyline(route.coordinates, {
+    //                color: route.color,  // 设置路段颜色
+    //                weight: 7,            // 路段宽度
+    //                opacity: 0.7         // 路段透明度
+    //            }).addTo(map);
+
+    //            // 计算路段的中点来放置标志
+    //            var midpoint = getMidPoint(route.coordinates);
+    //        });
+
+            
+    //    });
+    //});
+
+
+
+    //// 遍历路段数据，绘制每条路段并绑定点击事件
+    //routes.forEach(function (route) {
+    //    // 创建多段线（路段）
+    //    var polyline = L.polyline(route.coordinates, {
+    //        color: route.color,  // 设置路段颜色
+    //        weight: 4,            // 路段宽度
+    //        opacity: 0.7         // 路段透明度
+    //    }).addTo(map);
+
+    //    // 计算路段的中点来放置标志
+    //    var midpoint = getMidPoint(route.coordinates);
+
+    //    // 创建标志，显示路段名称
+    //    L.marker(midpoint, {
+    //        icon: L.divIcon({
+    //            className: 'route-name',
+    //            html: route.name,
+    //            iconSize: [100, 60],  // 设置标志的大小
+    //            iconAnchor: [50, 30]  // 设置标志的锚点，居中显示
+    //        })
+    //    }).addTo(map);
+
+    //    // 为每条路段绑定点击事件，点击时显示路段名称
+    //    //polyline.on('click', function() {
+    //    //    L.popup()
+    //    //        .setLatLng(route.coordinates[0])  // 将弹窗定位到路段的起点
+    //    //        .setContent('路段名称: ' + route.name)
+    //    //        .openOn(map);
+    //    //});
+    //});
+
+
+
+    //const socket = new WebSocket("ws://127.0.0.1:8000/api/v1/ws/traffic")
+    //// 监听 WebSocket 消息
+    //socket.onmessage = function (event) {
+    //    const trafficData = JSON.parse(event.data);
+    //    console.log(trafficData);
+
+    //    // 清除旧的路径
+    //    if (window.polyline) {
+    //        window.polyline.remove();
+    //    }
+
+    //    // 将新的交通数据绘制在地图上
+    //    var routeCoordinates = trafficData.map(function (point) {
+    //        return [point.lat, point.lng];
+    //    });
+
+    //    var routeColor = trafficData.map(function (point) {
+    //        if (point.traffic_status === 'congested') {
+    //            return 'red';  // 拥堵 -> 红色
+    //        } else {
+    //            return 'green';  // 通畅 -> 绿色
+    //        }
+    //    });
+
+    //    // 绘制新的交通路线
+    //    window.polyline = L.polyline(routeCoordinates, {
+    //        color: routeColor[0],  // 设置初始路径的颜色
+    //        weight: 6,
+    //        opacity: 0.7
+    //    }).addTo(map);
+
+    //    // 给每段路径添加弹出框
+    //    for (var i = 0; i < routeCoordinates.length - 1; i++) {
+    //        L.polyline([routeCoordinates[i], routeCoordinates[i + 1]], {
+    //            color: routeColor[i],
+    //            weight: 6,
+    //            opacity: 0.7
+    //        }).addTo(map)
+    //            .bindPopup('Traffic Status: ' + (trafficData[i].traffic_status === 'congested' ? 'Congested' : 'Clear'));
+    //    }
+    //};
+
+    //// WebSocket 连接错误处理
+    //socket.onerror = function (error) {
+    //    console.log("WebSocket Error: " + error);
+    //};
+
+    //// WebSocket 连接关闭处理
+    //socket.onclose = function (event) {
+    //    console.log("WebSocket connection closed");
+    //};
+
+</script>
