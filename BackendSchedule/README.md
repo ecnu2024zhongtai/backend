@@ -6,3 +6,7 @@
 
 
 ## 项目启动
+安装部署完AirFlow后，
+启动AirFlow，以及Scheduler
+将本项目dags/目录下脚本复制到AirFlow的dags/目录下，
+并在web管理界面启动dags
