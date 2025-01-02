@@ -26,7 +26,7 @@ def dispatch_taxi(location: Location):
     if not nearest_driver.empty:
         driver_lat = nearest_driver['lat']
         driver_lon = nearest_driver['lon']
-        route = get_route(location.latitude, location.longitude, driver_lat, driver_lon)
+        route = get_route(start_lat=driver_lat, start_lon=driver_lon, end_lat=location.latitude, end_lon=location.longitude)
         return {
             "message": f"派单给司机: {nearest_driver['devid']}, 距离您{round(haversine(location.longitude, location.latitude, driver_lon, driver_lat), 2)}千米",
             "route": route,
