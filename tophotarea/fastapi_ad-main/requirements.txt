@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+alembic
+bcrypt
+pydantic-settings
+passlib[bcrypt]
+pandas
+xlrd
+websockets
+psycopg2
