@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Taxi</title>
+    <script src="https://webapi.amap.com/maps?v=1.4.15&key="></script>  // JS_API_KEY
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        #map {
+            width: 80%;
+            height: 60vh;
+            border: 1px solid #ccc;
+        }
+        #location {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Taxi</h1>
+    <div class="input-group">
+        <label for="latitude">纬度:</label>
+        <input type="text" id="latitude" value="0" onchange="initMap()">
+    </div>
+    <div class="input-group">
+        <label for="longitude">经度:</label>
+        <input type="text" id="longitude" value="0" onchange="initMap()">
+    </div>
+    <!-- <button onclick="initMap()">显示用户位置</button> -->
+    <button onclick="dispatchTaxi()">Taxi</button>
+    <div id="map"></div>
+    <div id="info"></div>
+
+    <script>
+        let userLocation = {
+            latitude: 45.803775,
+            longitude: 126.534967
+        };
+
+        function initMap() {
+            userLocation.latitude = parseFloat(document.getElementById('latitude').value);
+            userLocation.longitude = parseFloat(document.getElementById('longitude').value);
+
+            const map = new AMap.Map('map', {
+                resizeEnable: true,
+                center: [userLocation.longitude, userLocation.latitude],
+                zoom: 13
+            });
+
+            const userMarker = new AMap.Marker({
+                position: [userLocation.longitude, userLocation.latitude],
+                title: '用户位置',
+                icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png'
+            });
+            map.add(userMarker);
+        }
+
+        function dispatchTaxi() {
+            fetch('http://[host:port]/taxi_app/', {    // 加入调用main的host和port
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    latitude: userLocation.latitude,
+                    longitude: userLocation.longitude
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.route) {
+                    var map = new AMap.Map('map', {
+                        resizeEnable: true,
+                        center: [userLocation.longitude, userLocation.latitude],
+                        zoom: 13
+                    });
+                    
+                    var route = data.route.route.paths[0];
+                    var steps = route.steps;
+                    var polyline = new AMap.Polyline({
+                        path: steps.flatMap(step => step.polyline.split(';').map(point => point.split(',').map(Number))),
+                        borderWeight: 2,
+                        strokeColor: 'blue',
+                        lineJoin: 'round'
+                    });
+                    map.add(polyline);
+
+                    var taxiMarker = new AMap.Marker({
+                        position: [data.driver_lon, data.driver_lat],
+                        title: 'Taxi',
+                        icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png'
+                    });
+                    map.add(taxiMarker);
+
+                    const userMarker = new AMap.Marker({
+                        position: [userLocation.longitude, userLocation.latitude],
+                        title: '用户位置',
+                        icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png'
+                    });
+                    map.add(userMarker);
+                    
+                    document.getElementById('info').innerText = data.message;
+
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
