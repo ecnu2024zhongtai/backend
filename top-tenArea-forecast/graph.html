@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <style>
+    html,
+    body,
+    #container {
+      width: 100%;
+      height: 100%;
+    }
+    </style>
+    <title>多边形的绘制和编辑</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <script src="https://a.amap.com/jsapi_demos/static/geojson/shanghai.js"></script>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=2d7b9f16066fe4143962076efd9c5ef7"></script>
+    <script src="https://a.amap.com/jsapi_demos/static/demo-center/js/demoutils.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<script type="text/javascript">
+  var map = new AMap.Map("container", {
+    center: [126.663,45.754],
+    zoom: 14
+  });
+
+  // var pp = [
+    
+  // ];
+
+  var pp = [
+  [
+    [
+      [126.64, 45.78],
+    [126.649, 45.78],
+    [126.649, 45.789],
+    [126.64, 45.789],
+    ],
+  ],
+];
+
+    var ppp = [
+  [
+    [
+      [126.66, 45.75],
+    [126.669, 45.75],
+    [126.669, 45.759],
+    [126.66, 45.759],
+    ],
+  ],
+];
+
+fetch('http://127.0.0.1:8005/top-ten-locations')
+ .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+ .then(data => {
+    function transformData(data) {
+  let result = [];
+for (let item of data) {
+     let [lat, lon] = item.split(',').map(num =>parseFloat(num.replace(/[()]/g, '')));
+    let itemList = [
+	[lon, lat],
+        [lon + 0.009, lat],
+        [lon + 0.009, lat + 0.009],
+        [lon, lat + 0.009]
+    ];
+    result.push(itemList);
+  console.log(itemList)
+  }
+   console.log("\n") 
+  return result;
+}
+   res = transformData(data)
+
+   function addPolygon(data) {
+    let polygon = new AMap.Polygon({
+      path: data,
+      fillColor: '#ccebc5',
+      strokeOpacity: 1,
+      fillOpacity: 0.5,
+      strokeColor: '#2b8cbe',
+      strokeWeight: 3,
+      strokeStyle: 'dashed',
+      strokeDasharray: [5, 5],
+    });
+    polygon.on('mouseover', () => {
+      polygon.setOptions({
+        fillOpacity: 0.7,
+        fillColor: '#FF0000'
+      })
+    })
+    polygon.on('mouseout', () => {
+      polygon.setOptions({
+        fillOpacity: 0.5,
+        fillColor: '#ccebc5'
+
+      })
+    })
+    map.add(polygon);
+  }
+  for(let i = 0; i <= 10; i++) {
+  addPolygon(res[i])
+}
+  })
+ .catch(error => console.error('Error fetching data:', error));
+
+// const polygon = new AMap.Polygon({
+//   path: pathArr, //多边形路径
+//   fillColor: "#ccebc5", //多边形填充颜色
+//   strokeOpacity: 1, //线条透明度
+//   fillOpacity: 0.5, //填充透明度
+//   strokeColor: "#2b8cbe", //线条颜色
+//   strokeWeight: 1, //线条宽度
+//   strokeStyle: "dashed", //线样式
+//   strokeDasharray: [5, 5], //轮廓的虚线和间隙的样式
+// });
+
+  
+  // print(suzhou)
+</script>
+</body>
+</html>
