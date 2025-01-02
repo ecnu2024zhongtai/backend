@@ -8,19 +8,24 @@ import webbrowser
 import json
 
 # 数据加载与处理
-data = pd.read_csv('trace06-color.csv', header=None)  # 修改为实际路径
-data.columns = ['VehicleNum', 'Stime', 'longitude', 'latitude']
+data = pd.read_csv('onehour.csv', header=None)  # 修改为实际路径
+
+data.columns = ['devid', 'speed', 'latitude', 'longitude','Stime']
 data['longitude'] = pd.to_numeric(data['longitude'], errors='coerce')
+data['speed'] = pd.to_numeric(data['speed'], errors='coerce')
 data['latitude'] = pd.to_numeric(data['latitude'], errors='coerce')
-data['VehicleNum'] = pd.to_numeric(data['VehicleNum'], downcast='integer', errors='coerce')
-data['Stime'] = pd.to_datetime(data['Stime'], format='%Y-%m-%d %H:%M:%S').astype(str)
+data['devid'] = pd.to_numeric(data['devid'], downcast='integer', errors='coerce')
+if 'OpenStatus' not in data.columns:
+    data['OpenStatus'] = 0  # 默认值为 0
+# data['Stime'] = pd.to_datetime(data['Stime'], format='%Y-%m-%d %H:%M:%S').astype(str)
 print(data['Stime'].min(), data['Stime'].max())
 hrb = gpd.read_file('realmap.json')  # 修改为实际路径
 hrb.crs = None
 data = tbd.clean_outofshape(data, hrb, col=['longitude', 'latitude'], accuracy=500)
+data = tbd.clean_taxi_status(data, col=['devid', 'Stime','OpenStatus'])
 
 # HTML 文件路径
-html_file = "taxi_visualization.html"
+html_file = "taxi_oh.html"
 
 # 检查文件是否存在且非空
 if os.path.exists(html_file) and os.path.getsize(html_file) > 0:
@@ -39,10 +44,6 @@ else:
                 'dataId': 'Taxi Data Visualization',
                 'name': ['Stime'],
                 'type': 'timeRange',
-                'value': [
-                    '2015-01-06 08:00:00',
-                    '2015-01-06 08:00:52'
-                ],
                 'enlarged': True
             }],
             'layers': [{
@@ -62,7 +63,7 @@ else:
                         'color': [0, 255, 0],
                     },
                     "colorField": {
-                        "name": "VehicleNum",
+                        "name": "devid",
                         "type": "integer"
                     },
                 }
