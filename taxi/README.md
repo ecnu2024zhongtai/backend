@@ -17,4 +17,4 @@
 基于 高德地图API-驾车路径规划 获取从司机到用户位置的路线。
 
 ## 例子
-![微信图片_20250102230310](https://github.com/user-attachments/assets/cf02a4f7-049b-41b5-bd62-a23596fde42d)
+![taxi example](https://github.com/user-attachments/assets/6a721979-0b63-45a8-9e64-420c4c293124)
