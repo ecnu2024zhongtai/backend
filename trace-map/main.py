@@ -1,89 +1,48 @@
-# # This is a sample Python script.
-#
-# # Press Shift+F10 to execute it or replace it with your code.
-# # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-#
-# from pymongo import MongoClient
-# import csv
-# from datetime import datetime  # 用于时间戳转换
-# from bson import ObjectId
-#
-#
-# # 连接到 MongoDB
-# client = MongoClient("mongodb://law.conetop.cn:27017/")
-# print(client.list_database_names())
-# db = client["harbintrips"]  # 替换为实际的数据库名称
-# print(db.list_collection_names())
-# collection = db["trips2_06"]  # 替换为实际的集合名称
-# count = collection.count_documents({})
-# print(f"文档数量: {count}")
-# # 查询数据
-#
-# # 查询集合中的所有文档
-# documents = collection.find()
-# output_file = "trace06.csv"
-#
-# # 打开 CSV 文件准备写入
-# with open(output_file, mode="w", newline="", encoding="utf-8") as csvfile:
-#     csv_writer = csv.writer(csvfile)
-#     # 写入 CSV 文件头
-#     # csv_writer.writerow(["devid", "timestamp", "longitude","latitude"])
-#
-#     # 遍历每个文档，提取数据
-#     for doc in documents:
-#         devid = doc.get("devid", None)
-#         timestamps = doc.get("timestamp", [])
-#         latitudes = doc.get("latitudes", [])
-#         longitudes = doc.get("longitudes", [])
-#
-#         # 确保 devid 存在，且 timestamps, latitudes 和 longitudes 的长度一致
-#         if devid and len(timestamps) == len(latitudes) == len(longitudes):
-#             for i in range(len(timestamps)):
-#                 time_str = datetime.fromtimestamp(timestamps[i]).strftime("%Y-%m-%d %H:%M:%S")
-#                 csv_writer.writerow([devid, time_str, longitudes[i], latitudes[i]])
-#
-# print(f"数据已成功提取并保存到 {output_file}")
-from pymongo import MongoClient
+import requests
 import csv
-from datetime import datetime  # 用于时间戳转换
-from bson import ObjectId
+from datetime import datetime
 
-# 连接到 MongoDB
-client = MongoClient("mongodb://law.conetop.cn:27017/")
-print(client.list_database_names())
-db = client["harbintrips"]  # 替换为实际的数据库名称
-print(db.list_collection_names())
-collection = db["trips2_06"]  # 替换为实际的集合名称
-count = collection.count_documents({})
-print(f"文档数量: {count}")
+# 设置 API URL
+api_url = "http://law.conetop.cn:8005/api/v1/trips/recent/1hour"
 
 # 设置输出文件
-output_file = "trace06.csv"
+output_file = "onehour.csv"
 
-# 使用分页处理来减少内存消耗
-batch_size = 10000  # 每次处理的文档数量
-cursor = collection.find().batch_size(batch_size)
+# 发送 GET 请求获取数据
+try:
+    response = requests.get(api_url)
+    response.raise_for_status()  # 检查请求是否成功
+    data = response.json()  # 解析 JSON 数据
+except requests.exceptions.RequestException as e:
+    print(f"请求失败: {e}")
+    exit(1)
+
+# 检查数据格式是否正确
+if not isinstance(data, list):
+    print("数据格式不正确，期望为列表类型。")
+    exit(1)
 
 # 打开 CSV 文件准备写入
 with open(output_file, mode="w", newline="", encoding="utf-8") as csvfile:
     csv_writer = csv.writer(csvfile)
     # 写入 CSV 文件头
-    # csv_writer.writerow(["devid", "timestamp", "longitude", "latitude"])
+    # csv_writer.writerow(["devid", "speed", "latitude", "longitude", "timestamp"])
 
-    # 遍历文档，逐个写入文件
-    for doc in cursor:
-        devid = doc.get("devid", None)
-        timestamps = doc.get("timestamp", [])
-        latitudes = doc.get("latitudes", [])
-        longitudes = doc.get("longitudes", [])
+    # 遍历数据并写入 CSV
+    for item in data:
+        devid = item.get("devid")
+        speed = item.get("speed")
+        lat = item.get("lat")
+        lon = item.get("lon")
+        tms = item.get("tms")
 
-        # 确保 devid 存在，且 timestamps, latitudes 和 longitudes 的长度一致
-        if devid and len(timestamps) == len(latitudes) == len(longitudes):
-            for i in range(len(timestamps)):
-                # time_str = timestamps[i]
-                time_str = datetime.fromtimestamp(timestamps[i]).strftime("%Y-%m-%d %H:%M:%S")
-                # print(time_str)
-                # csv_writer.writerow([devid, time_str, longitudes[i], latitudes[i]])
-                csv_writer.writerow([devid, time_str, longitudes[i], latitudes[i]])
+        if devid is not None and speed is not None and lat is not None and lon is not None and tms is not None:
+            try:
+                # 将时间戳转换为日期时间字符串
+                time_str = datetime.fromtimestamp(tms).strftime("%Y-%m-%d %H:%M:%S")
+                # 写入 CSV 文件
+                csv_writer.writerow([devid, speed, lat, lon, time_str])
+            except Exception as e:
+                print(f"时间转换错误: {e}")
 
 print(f"数据已成功提取并保存到 {output_file}")
