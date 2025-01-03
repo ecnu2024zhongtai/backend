@@ -52,6 +52,31 @@ async def load_last_2mins_to_redis():
     await redis.close()
     return {"status": "success", "message": "Trips loaded to Redis"}
 
+async def load_last_1hour_to_redis():
+    to_timestamp = 1420588800 + get_today_seconds()
+    from_timestamp = to_timestamp - 3600
+    trips = await get_trips_tt(start_timestamp=from_timestamp, end_timestamp=to_timestamp)
+    trips_dict_list = [trip.to_dict() for trip in trips]  # 将 Trip 对象列表转换为字典列表
+    redis = await get_redis()
+    await redis.set(RedisKey.recent_1hour_trip_key(), json.dumps(trips_dict_list))
+    await redis.close()
+    return {"status": "success", "message": "1 hour Trips loaded to Redis"}
+
+
+async def get_recent_1hour_trips_from_redis():
+    redis = await get_redis()
+    trips_str = await redis.get(RedisKey.recent_1hour_trip_key())
+    await redis.close()
+    if trips_str is None:
+        return []
+    try:
+        trips_list = json.loads(trips_str)  # 将 JSON 字符串反序列化为列表
+        trips = [Trip(**trip) for trip in trips_list]  # 将字典列表转换为 Trip 对象列表
+    except json.JSONDecodeError:
+        return {"status": "error", "message": "Failed to decode JSON"}
+    return trips
+
+
 async def get_recent_trips_from_redis():
     redis = await get_redis()
     trips_str = await redis.get(RedisKey.recent_2mins_trip_key())

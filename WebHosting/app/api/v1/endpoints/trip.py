@@ -38,3 +38,15 @@ async def load_last_2mins_to_redis():
 @router.get("/trips/recent", response_model= List[Trip])
 async def get_recent_trips_from_redis():
     return await TripService.get_recent_trips_from_redis()
+
+
+## Load last 1 hour origin trips to redis
+## for scheduled job
+@router.get("/trips/load1hourtoredis")
+async def load_last_1hour_to_redis():
+    return await TripService.load_last_1hour_to_redis()
+
+## Load recent origin trips from redis
+@router.get("/trips/recent/1hour", response_model= List[Trip])
+async def get_recent_1hour_trips_from_redis():
+    return await TripService.get_recent_1hour_trips_from_redis()
