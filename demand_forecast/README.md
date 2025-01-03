@@ -103,7 +103,17 @@ WHERE fd.lon_index = hp.lon_index
 ### 模型构建
 
 采用ConvLSTM构建模型
-论文参考：https://arxiv.org/abs/1506.04214
+论文参考：[Convolutional LSTM Network: A Machine Learning
+Approach for Precipitation Nowcasting](https://arxiv.org/abs/1506.04214)
+
+![image](https://github.com/user-attachments/assets/8818dee0-a77c-47c9-ac99-94c279574089)
+
+
+![image](https://github.com/user-attachments/assets/f3262011-9db8-4b81-8ec3-a87bd4242ed2)
+
+
+![image](https://github.com/user-attachments/assets/43db9399-508a-4de8-8300-0f87354ea982)
+
 
 2. 模型构建
     1. 模型选择
