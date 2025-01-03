@@ -6,7 +6,7 @@
 ![space-time](https://github.com/user-attachments/assets/5c9cc78f-dd0e-4abf-bff0-b9b755de105a)
 
 基于改进的DBSCAN聚类算法，将提取出的载客点按其时间戳分为24个时间片进行时空聚类，生成各时间片中时空密度较高的出租车载客点集合，其聚类结果即时空簇便为某个连续时段内载客事件发生较为频繁的区域。
-采用 Graham扫描法，发现各时空簇在空间属性上的凸包(Convex Hull)，以凸多边形表示载客热门区域的儿何属性，实现对时空簇到地理几何数据的转化（数据存于topkarea_graham_center）。
+采用 Graham扫描法，发现各时空簇在空间属性上的凸包(Convex Hull)，以凸多边形表示载客热门区域的几何属性，实现对时空簇到地理几何数据的转化（数据存于topkarea_graham_center）。
 ![搜狗截图20241231132347](https://github.com/user-attachments/assets/113516bb-4cf4-456f-9d33-4e2347508be4)
 
 同时计算出各时空簇的簇心(数据存于toparea_graham_center表)，代表该载客热门区域对出租车司机进行推荐，最后将该时空簇所处于的时间片作为其时段属性。以下就是不同时段的热门区域。
