@@ -14,31 +14,45 @@
 ## 环境准备
 debian12
 ## 数据库安装
-Mongodb
-PostgreSql
-Redis
-可选：Hadoop、Hive、Spark
+
+1. Mongodb
+2. PostgreSql
+3. Redis
+4. 可选：Hadoop、Hive、Spark
+   
 ## 编程语言开发包安装
-Julia 1.11
-Python 3.12
-C# donet8
-Node 22
-Angular 18
+
+1. Julia 1.11
+2. Python 3.12
+3. C# donet8
+4. Node 22
+5. Angular 18
+   
 ## 数据准备
 至个业务目录执行数据处理脚本
-## 后端环境依赖安装
+## 后端环境依
+```
 cd WebHosting
 pip install -r requirements.txt
+```
 ## 前端环境依赖安装
+```
 npm install
+```
 ## 其他中间件准备
+```
 Airflow
+```
 # 项目启动
 ## 后端启动
+```
 python main.py
+```
 ![image](https://github.com/user-attachments/assets/15cedf3f-8ac9-48b3-8670-799d5162dde5)
 
 ## 前端启动
+```
 npm start
+```
 ![image](https://github.com/user-attachments/assets/670fe6a2-3194-4005-9550-5094e36e8649)
 
