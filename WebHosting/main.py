@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from app.api.v1.endpoints import trip, toparea, ppdensity, demand
+from app.api.v1.endpoints import trip, toparea, ppdensity, demand, tracemap, taxi
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI()
 
@@ -24,8 +25,8 @@ app.include_router(trip.router, prefix="/api/v1")
 app.include_router(toparea.router, prefix="/api/v1")
 app.include_router(ppdensity.router, prefix="/api/v1")
 app.include_router(demand.router, prefix="/api/v1")
+app.include_router(tracemap.router, prefix="/api/v1")
+app.include_router(taxi.router, prefix="/api/v1")
 
-import os
-
-port = int(os.environ.get("PORT", 8004))
+port = int(os.environ.get("PORT", 8005))
 uvicorn.run(app, host="::", port=port)
