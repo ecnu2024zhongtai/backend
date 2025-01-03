@@ -35,7 +35,7 @@ SELECT latitude FROM harbinpp group by latitude order BY latitude DESC limit 2;
 46.09583333333279  46.08749999999946  0.008333333 46.1
 127.05416666666545 127.04583333333213 0.008333333 127.058333333
 126.0874999999988  126.09583333333212 0.008333333 126.083333333
-###
+### 数据建模
 
 为harbinpp表添加格栅划分字段，并更新数据
 ```
@@ -99,6 +99,11 @@ WHERE fd.lon_index = hp.lon_index
   AND fd.lat_index = hp.lat_index;
 ```
 
+
+### 模型构建
+
+采用ConvLSTM构建模型
+论文参考：https://arxiv.org/abs/1506.04214
 
 2. 模型构建
     1. 模型选择

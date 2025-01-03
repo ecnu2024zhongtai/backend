@@ -38,6 +38,9 @@ class ConvLSTMCell(nn.Module):
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
 
+        # 确保 input_tensor 在 h_cur 所在的设备上
+        input_tensor = input_tensor.to(h_cur.device)
+
         combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
 
         combined_conv = self.conv(combined)
@@ -131,9 +134,9 @@ class ConvLSTM(nn.Module):
         -------
         last_state_list, layer_output
         """
-        if not self.batch_first:
-            # (t, b, c, h, w) -> (b, t, c, h, w)
-            input_tensor = input_tensor.permute(1, 0, 2, 3, 4)
+        # if not self.batch_first:
+        #     # (t, b, c, h, w) -> (b, t, c, h, w)
+        #     input_tensor = input_tensor.permute(1, 0, 2, 3, 4)
 
         b, _, _, h, w = input_tensor.size()
 
