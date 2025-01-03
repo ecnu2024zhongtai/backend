@@ -13,4 +13,11 @@ async def get_demands(dayid: int,
                       time_index: Optional[int] = Query(None)):
     return await DemandService.get_demands(dayid, lon_index, lat_index, time_index)
 
+@router.get("/demands/last10mins", response_model= List[Demand])
+async def get_last_10mins_demands_from_redis():
+    return await DemandService.get_recent_10mins_demands_from_redis()
 
+
+@router.get("/demands/last10mins/loadtoredis")
+async def get_demands():
+    return await DemandService.load_last_10mins_Demand_to_redis()

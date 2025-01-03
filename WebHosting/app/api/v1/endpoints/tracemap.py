@@ -9,4 +9,3 @@ router = APIRouter()
 async def get_tracemap():
     return await TracemapService.renderhtml()
 
-

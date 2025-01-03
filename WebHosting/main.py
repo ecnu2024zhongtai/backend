@@ -6,7 +6,6 @@ import os
 
 app = FastAPI()
 
-
 # 配置 CORS 中间件
 app.add_middleware(
     CORSMiddleware,
