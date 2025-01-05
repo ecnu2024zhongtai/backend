@@ -16,7 +16,7 @@ def get_pgdb():
 
 def load_data_from_db(dayid: int):
     conn = get_pgdb()
-    query = "SELECT dayid, lat_index, lon_index, time_index, ppdensity, trip_count FROM forecast_dataset WHERE dayid = %s"
+    query = "SELECT dayid, lat_index, lon_index, time_index, ppdensity, trip_count FROM forecast_dataset WHERE dayid = %s "
     df = pd.read_sql(query, conn, params=(dayid,))
     conn.close()
     return df
